@@ -1,0 +1,12 @@
+{
+    "1":{
+        "file.ps1":"./helloWorld.ps1",
+        "alias":"helloWorld",
+        "description":"Prints 'Hello, World!' to the console."
+    },
+    "2":{
+        "file.ps1":"./otherCode.ps1",
+        "alias":"Shoebill2",
+        "description":"Show other shoebill."
+    }
+}
