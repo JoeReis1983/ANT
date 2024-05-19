@@ -1,24 +1,62 @@
 Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
 
-# Cria uma janela
+# Create a form
 $Form = New-Object System.Windows.Forms.Form
 
-# Define a cor dos botões da barra de título
+# Set the properties of the form
 $Form.ControlBox = $true
 $Form.MaximizeBox = $false
 $Form.MinimizeBox = $false
 $Form.Text = "Joe's PowerApps"
-
 $Form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedSingle
 $Form.Size = New-Object System.Drawing.Size(1000, 950)
-
 $Form.StartPosition = "CenterScreen"
 
-# Colocar imagem shoebill.jpg de fundo na janela, que deve estar na mesma pasta que o script
+# Set the background image of the form
 $Form.BackgroundImage = [System.Drawing.Image]::FromFile("$PSScriptRoot\shoebill.jpg")
 
+# Create a sound player for background music
+$SoundPlayer = New-Object System.Media.SoundPlayer
+$SoundPlayer.SoundLocation = "$PSScriptRoot\assets\background_music.wav"
 
-# Incluir botões com base no arquivo de configuração
+$MuteButton = New-Object System.Windows.Forms.Button
+$MuteButton.Width = 20
+$MuteButton.Height = 20
+$MuteButton.Left = $Form.Width - $MuteButton.Width - 20
+$MuteButton.Top = 10
+# O botão deve ser em formato de circle
+
+$MuteButton.BackgroundImage = [System.Drawing.Image]::FromFile("$PSScriptRoot\assets\stop_red.png")
+$MuteButton.BackgroundImage.Tag = "Mute"
+$MuteButton.BackColor = "Red"
+# Define the event handler for the mute button
+$MuteButton.Add_Click({
+    if ($SoundPlayer.IsLoadCompleted) {
+        if ($MuteButton.BackgroundImage.Tag -eq "Mute") {
+            $SoundPlayer.Stop()
+            $MuteButton.BackgroundImage = [System.Drawing.Image]::FromFile("$PSScriptRoot\assets\play.png")
+            $MuteButton.BackgroundImage.Tag = "Unmute"
+            $MuteButton.BackColor = "Green"
+        } else {
+            $SoundPlayer.PlayLooping()
+            $MuteButton.BackgroundImage = [System.Drawing.Image]::FromFile("$PSScriptRoot\assets\stop_red.png")
+            $MuteButton.BackgroundImage.Tag = "Mute"
+            $MuteButton.BackColor = "Red"
+        }
+    }
+})
+
+# Add the mute button to the form
+
+# Add the mute button to the form
+$Form.Controls.Add($MuteButton)
+
+# Load and play the background music
+$SoundPlayer.LoadAsync()
+$SoundPlayer.PlayLooping()
+
+# Include buttons based on the configuration file
 $ButtonWidth = 100
 $ButtonHeight = 30
 $ButtonMargin = 10
@@ -26,7 +64,7 @@ $ColumnMargin = 50
 
 $RowY = ($Form.Height / 2) - (($ButtonHeight + $ButtonMargin) * 9)
 
-# Lê o arquivo de configuração
+# Read the configuration file
 $config = Get-Content -Path './config.json' | ConvertFrom-Json
 
 $i = 1
@@ -38,16 +76,16 @@ foreach ($key in $config.PSObject.Properties.Name) {
     $Button.Left = ($Form.Width / 2) - (($ButtonWidth + $ButtonMargin) * 4.5) + (($ButtonWidth + $ButtonMargin) * (($i - 1) % 2))
     $Button.Top = $RowY + (($ButtonHeight + $ButtonMargin) * [math]::Floor(($i - 1) / 2))
 
-    # Adiciona um evento de clique ao botão
+    # Add a click event to the button
     $Button.Add_Click({
-        # Armazena o caminho do arquivo em uma variável
+        # Store the file path in a variable
         $filePath = $config.$key.'file.ps1'
-        # Verifica se o arquivo existe antes de tentar executá-lo
+        # Check if the file exists before trying to execute it
         if (Test-Path $filePath) {
-            # Executa o script especificado no arquivo de configuração
+            # Execute the script specified in the configuration file
             & $filePath
         } else {
-            Write-Host "O arquivo $filePath não existe."
+            Write-Host "The file $filePath does not exist."
         }
     }.GetNewClosure())
 
@@ -55,5 +93,8 @@ foreach ($key in $config.PSObject.Properties.Name) {
     $i++
 }
 
-# Exibe a janela
+# Show the form
 $Form.ShowDialog()
+
+# Stop the background music when the form is closed
+$SoundPlayer.Stop()
